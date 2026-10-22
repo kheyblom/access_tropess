@@ -34,10 +34,19 @@ working step, so that a new session can resume without re-deriving anything.
   wrong-size and bad-content paths all behave as designed. CMR sizes are exact for v1
   and v2; v2 files carry `VersionID` 2. Fixed: the monitor now gets the launched pid
   from `run_download.sh` and stops waiting when a short run ends between its polls.
-- The tiny data is at `/glade/derecho/scratch/kheyblom/data/tropess_tiny/` (7 files,
-  255 MB). Delete it only with the user's okay.
-- **Next: task 5** (rerun the full dry run as the audit and report), then task 6, which
-  needs the user's approval and their choice of route (monitored login node or Casper).
+- Task 5 is complete (2026-10-22 23:30 UTC): the audit dry run matches the task 3 one.
+  The tiny test data is deleted (the user's okay).
+- **Task 6 is in progress.** The full download started 2026-10-22 17:32 (MT) on
+  **derecho3**, detached (`setsid nohup nice -n 19`, own session 321132, main pid
+  321148), 4 workers, with the monitor. 12,127 files listed (one more than the audit).
+  The user disconnected and left it running. Check it with `./run_download.sh --status`
+  (from another node: `ssh derecho3 'kill -0 321148 && echo alive'`) and
+  `tail -n 40 logs/tropess_download.log`. A run that died leaves a stale pid file;
+  rerun `./run_download.sh` to resume. When it ends with `done :-)`, record the
+  verification and the manifests in TASKS.md and go to task 7 (hand back).
+- Route preference (user, 2026-10-22): small downloads like this go on a login node,
+  detached with `run_download.sh`, not a batch job. `job_download.pbs` is back on Casper;
+  the develop queue's internet access was never checked.
 - Facts checked (2026-10-22): `time`, `ShortName` (bytes) and `VersionID` (int32 array)
   are at the file root (v1 RS Summary); scratch is 70.3 of 150 TiB used.
 

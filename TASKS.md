@@ -75,18 +75,25 @@ Results (2026-10-22, login node derecho3, 2 workers):
 - spot checks: a v1 (R1p23 F0p9) and a v2 (R1p25 F2p10) file open with h5py and xarray (`target` 29,142 and 15,679 rows; `level` 17).
 - the scratchpad copy is deleted. The tiny data is still at `/glade/derecho/scratch/kheyblom/data/tropess_tiny/` (7 files, 255 MB, plus 3 manifests) until I okay deleting it.
 
-# 5. Audit before downloading
+# 5. Audit before downloading [COMPLETED]
 Dry-run the real config and report back before anything downloads:
 - per collection: CMR count and size against the handoff table, and the CMR query time.
 - the "missing only" contents against the handoff's expectations: AIRS FS Standard v1 = 2023-07-21, 2023-10-19, and every day 2024-09-05 .. 2026-05-31; CrIS-JPSS1 FS Standard v1 = 46 dates inside 2021-04-01 .. 2024-09-05, the 5 replacements, and the days after 2024-09-05.
 - dates with two files, new collections (re-query `TRPS*L2HDO*` at GES DISC), and existing-folder files that differ from CMR.
 - quota check: scratch was 70.3 of 150 TiB used on 2026-10-22; the job is ~237 GB in ~12,100 files.
 
-# 6. Download the missing files
+Results (2026-10-22 23:30 UTC, `logs/dryrun_full.out`): the same as the task 3 dry run. 12,126 files, 237.00 GB, all missing; the counts match the handoff except CrIS-JPSS1 FS Standard v2 (139, live); one granule per date everywhere; the 5 CrIS-JPSS1 replacements and nothing else in the old folders differs from CMR. No new collection (16 at GES DISC: the 14 configured and the 2 complete). Quota is ample. The tiny test data is deleted (my okay, 2026-10-22).
+
+# 6. Download the missing files [IN PROGRESS]
 Fetch everything the audit lists into the new collection folders.
 - needs my approval before starting, including the route: a monitored login-node run (`./run_download.sh`, as tropomi) or the Casper batch job (`qsub -A "$PBS_ACCOUNT" job_download.pbs`). Show me any job script and its cost first.
 - monitor with `./run_download.sh --status`, and rerun if verification reports missing files.
 - done when verification reports every listed file present, the right size and readable, and every collection has its manifest.
+
+Run (approved 2026-10-22: login node, detached, so it survives my disconnecting; I first asked for Casper, then a Derecho shared node, then settled on the login node):
+- started 2026-10-22 17:32 (MT) on derecho3 with `./run_download.sh` (4 workers, `nice -n 19`, `setsid nohup`, own session 321132, main pid 321148), with `monitor_download.sh` logging to `logs/tropess_download_monitor.log`.
+- listing done 17:33: **12,127 files** (one more than the audit: a live v2 collection grew). First minute: ~350 files, no errors.
+- `job_download.pbs` is back on Casper (with the venv python called directly). The develop queue was not used: the sibling notes say Derecho compute nodes have no outbound internet, which is unverified for shared nodes.
 
 # 7. Hand back to data_engineering_wiso-sat
 Report, as the handoff's "What to hand back" asks:

@@ -12,7 +12,9 @@
 # DISC cannot be reached from one. About 237 GB at GES DISC's ~100 MB/s is under
 # an hour, plus the CMR listing and the verification pass; the run is
 # restartable, so if it runs out of walltime resubmit and it picks up exactly
-# what is still missing. At most 2 cores x 4 h = 8 core-hours.
+# what is still missing. At most 2 cores x 4 h = 8 core-hours. The venv's
+# python is called directly: a batch shell does not read ~/.bashrc, so uv may
+# not be on PATH.
 
 #PBS -N tropess_download
 #PBS -q casper
@@ -25,4 +27,4 @@ set -euo pipefail
 
 cd "${PBS_O_WORKDIR}"
 
-uv run python tropess_download.py --config config/config_download.yaml
+.venv/bin/python tropess_download.py --config config/config_download.yaml
