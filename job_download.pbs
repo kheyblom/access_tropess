@@ -1,0 +1,28 @@
+#!/bin/bash
+# Fallback only. A download is network bound and a login node has outbound
+# internet, so a monitored ./run_download.sh is the sibling practice; this job
+# is for when the user prefers the transfer off the login node, or a login node
+# run keeps getting killed.
+#
+# Submit from the repository directory, so the job starts there:
+#
+#   qsub -A "$PBS_ACCOUNT" job_download.pbs
+#
+# Casper, not Derecho: Derecho compute nodes have no outbound internet, so GES
+# DISC cannot be reached from one. About 237 GB at GES DISC's ~100 MB/s is under
+# an hour, plus the CMR listing and the verification pass; the run is
+# restartable, so if it runs out of walltime resubmit and it picks up exactly
+# what is still missing. At most 2 cores x 4 h = 8 core-hours.
+
+#PBS -N tropess_download
+#PBS -q casper
+#PBS -l select=1:ncpus=2:mem=8GB
+#PBS -l walltime=04:00:00
+#PBS -j oe
+#PBS -o logs/tropess_download.pbs.log
+
+set -euo pipefail
+
+cd "${PBS_O_WORKDIR}"
+
+uv run python tropess_download.py --config config/config_download.yaml

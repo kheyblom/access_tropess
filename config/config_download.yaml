@@ -1,0 +1,67 @@
+directories:
+  # the raw tree; each collection lands in a new folder of its own,
+  # <download>/<instrument>/<ShortName.version>/<year>/
+  download: /glade/derecho/scratch/kheyblom/data/wisosat/raw/
+  logs: ./logs
+log_file: tropess_download.log
+# few workers, to stay well inside what GES DISC tolerates
+n_processes: 4
+# inclusive ['YYYY-MM-DD', 'YYYY-MM-DD'], or null for the whole record; a
+# collection may set its own
+date_range: null
+# attempts per file before it is reported failed; a rerun retries it again
+retries: 3
+# every TROPESS HDO collection not fully on disk (CMR, 2026-10-22). name is
+# <ShortName>.<version> as GES DISC names it, and the new folder's name;
+# instrument is the folder under download. existing names an old download
+# folder: granules whose file name is there are left out ("missing only"),
+# and the folder is only ever listed. Not listed, as they are complete on
+# disk: TRPSYL2HDOAIRSORS.1 and TRPSYL2HDOCRSRS.1.
+collections:
+  # AIRS
+  - name: TRPSDL2HDOAIRSORS.1       # RS Standard
+    concept_id: C4169241979-GES_DISC
+    instrument: AIRS
+  - name: TRPSYL2HDOAIRSFS.1        # FS Summary
+    concept_id: C2247040242-GES_DISC
+    instrument: AIRS
+  - name: TRPSYL2HDOAIRSFS.2        # FS Summary, live
+    concept_id: C4173958791-GES_DISC
+    instrument: AIRS
+  - name: TRPSDL2HDOAIRSFS.1        # FS Standard, missing only
+    concept_id: C2041965054-GES_DISC
+    instrument: AIRS
+    existing: /glade/derecho/scratch/kheyblom/data/wisosat/raw/AIRS/TRPSDL2HDOAIRSFS_1-20240912_174250
+  - name: TRPSDL2HDOAIRSFS.2        # FS Standard, live
+    concept_id: C4170965861-GES_DISC
+    instrument: AIRS
+  - name: TRPSFL2HDOAIRSFS.2        # FS Full, live
+    concept_id: C4173720378-GES_DISC
+    instrument: AIRS
+  # CrIS-SNPP
+  - name: TRPSYL2HDOCRSFS.1         # FS Summary
+    concept_id: C2247040372-GES_DISC
+    instrument: CRIS
+  - name: TRPSDL2HDOCRSFS.1         # FS Standard
+    concept_id: C2041965312-GES_DISC
+    instrument: CRIS
+  - name: TRPSDL2HDOCRSAUS.1        # special collection, Australian fires
+    concept_id: C2041965187-GES_DISC
+    instrument: CRIS
+  # CrIS-JPSS1
+  - name: TRPSYL2HDOCRS1FS.1        # FS Summary
+    concept_id: C2247040357-GES_DISC
+    instrument: CRIS
+  - name: TRPSYL2HDOCRS1FS.2        # FS Summary, live
+    concept_id: C4173959024-GES_DISC
+    instrument: CRIS
+  - name: TRPSDL2HDOCRS1FS.1        # FS Standard, missing only
+    concept_id: C2088007557-GES_DISC
+    instrument: CRIS
+    existing: /glade/derecho/scratch/kheyblom/data/wisosat/raw/CRIS/TRPSDL2HDOCRS1FS_1-20240912_023602
+  - name: TRPSDL2HDOCRS1FS.2        # FS Standard, live
+    concept_id: C4170967256-GES_DISC
+    instrument: CRIS
+  - name: TRPSFL2HDOCRS1FS.2        # FS Full, live
+    concept_id: C4173720392-GES_DISC
+    instrument: CRIS

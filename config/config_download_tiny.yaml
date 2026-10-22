@@ -1,0 +1,28 @@
+directories:
+  download: /glade/derecho/scratch/kheyblom/data/tropess_tiny/
+  logs: ./logs
+log_file: tropess_download_tiny.log
+n_processes: 2
+date_range: null
+retries: 3
+# a few days of three collections, about 0.3 GB: a "missing only" one across
+# the end of the old download, a CrIS-JPSS1 date whose old file was replaced
+# upstream (R18), and a live v2 one (format F2p10). The old folders are the
+# real ones, which are only ever listed.
+collections:
+  - name: TRPSDL2HDOAIRSFS.1
+    concept_id: C2041965054-GES_DISC
+    instrument: AIRS
+    existing: /glade/derecho/scratch/kheyblom/data/wisosat/raw/AIRS/TRPSDL2HDOAIRSFS_1-20240912_174250
+    # 09-01..09-04 are in the old folder, 09-05..09-07 are not
+    date_range: ['2024-09-01', '2024-09-07']
+  - name: TRPSDL2HDOCRS1FS.1
+    concept_id: C2088007557-GES_DISC
+    instrument: CRIS
+    existing: /glade/derecho/scratch/kheyblom/data/wisosat/raw/CRIS/TRPSDL2HDOCRS1FS_1-20240912_023602
+    # 2024-08-21 is one of the five replaced dates
+    date_range: ['2024-08-20', '2024-08-22']
+  - name: TRPSYL2HDOAIRSFS.2
+    concept_id: C4173958791-GES_DISC
+    instrument: AIRS
+    date_range: ['2026-06-01', '2026-06-03']
