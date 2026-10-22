@@ -22,14 +22,22 @@ working step, so that a new session can resume without re-deriving anything.
 ## Current working state
 
 - Task 1 (this CLAUDE.md, and TASKS.md filled out) is done (2026-10-22).
-- Task 2 is in progress: the local repo is initialized on `main` with `.gitignore`,
-  `CLAUDE.md` and `TASKS.md`. **The GitHub repo `kheyblom/access_tropess` does not exist
-  yet** (2026-10-22); the user has to create it (empty) before the first push.
-- Task 3: the design is proposed in TASKS.md task 3 and waits for the user's approval.
-  Nothing is built yet.
-- Facts checked so far (2026-10-22): CMR `Size` x 1024**2 equals the local byte count
-  exactly; `time`, `ShortName` (bytes) and `VersionID` (int32 array) are at the file
-  root; scratch is 70.3 of 150 TiB used.
+- Task 2 is in progress: the local repo is on `main`, `origin` set (fetch HTTPS, push
+  SSH). **The GitHub repo `kheyblom/access_tropess` does not exist yet** (2026-10-22).
+  `gh` is not installed here and its login is interactive, so the user has to create it
+  (empty) on github.com; then `git push -u origin main` and mark task 2 complete.
+- Task 3 is complete (2026-10-22): the user approved the design, and everything is built
+  and committed (see TASKS.md task 3 for the build notes and the dry run table).
+- Full dry run (2026-10-22 23:09): **12,126 files, 237.00 GB to fetch**, matching the
+  handoff except CrIS-JPSS1 FS Standard v2 at 139 (live, was 138). The 5 CrIS-JPSS1
+  replacements are confirmed; one granule per date everywhere; the old folders match
+  CMR by name and size. Output: `logs/dryrun_full.out`.
+- **Next: task 4** (tiny end-to-end test, 7 files, 255 MB, login node). Ask the user
+  before starting it. Not yet proven: that CMR's MiB size rounds to the exact byte
+  count for every collection (it did for one RS Summary file), and that the v2 (F2p10)
+  files carry `VersionID` 2 at the root.
+- Facts checked (2026-10-22): `time`, `ShortName` (bytes) and `VersionID` (int32 array)
+  are at the file root (v1 RS Summary); scratch is 70.3 of 150 TiB used.
 
 ## Rules from the handoff (always)
 
@@ -66,12 +74,22 @@ From the handoff (2026-10-22):
   CMR `updated`, download time (UTC), URL, and the CMR query time (the cutoff for the
   live v2 collections).
 
-Proposed in TASKS.md task 3 and not yet confirmed (plan task 3 with the user before
-building): earthaccess login and session (imerg pattern), config `collections` list
-with `name`, `concept_id`, `instrument` and optional `existing`, a global `date_range`,
-the content check in the worker before the rename, the full content check again in the
-verification pass, and the manifest's exact columns (`cmr_updated` = `ProviderDates`
-Update, plus `meta.revision-date`; download time = the file's mtime).
+Approved by the user (2026-10-22, TASKS.md task 3):
+- earthaccess login, search by concept id, and session (imerg pattern); 4 workers.
+- Config `collections` list with `name`, `concept_id`, `instrument`, optional
+  `existing` (absolute path) and optional per-collection `date_range` (the tiny config
+  uses it), plus a global `date_range`.
+- Files in the new folders are skipped when their size equals CMR's; any other size is
+  fetched again. The content check runs in the worker before the rename, and again on
+  every file in the verification pass. A right-size file that fails the content check
+  is reported as "bad content" and is not re-fetched by a rerun (it would be skipped on
+  size); look at it by hand.
+- Manifest `<ShortName.version>_manifest.csv` in each collection folder, rewritten after
+  each run with the verified files: `file_name, bytes, cmr_size_mb, cmr_updated`
+  (`ProviderDates` Update)`, cmr_revision_date` (`meta.revision-date`)`,
+  downloaded_utc` (the file's mtime)`, url, cmr_query_utc`.
+- `--dry-run` also audits the old folders (names CMR no longer lists, with the
+  granule now covering that date; size differences). It changes nothing.
 
 ## Remote: GES DISC and CMR (checked 2026-10-22)
 
@@ -91,7 +109,14 @@ Update, plus `meta.revision-date`; download time = the file's mtime).
     exact byte count (330,614 bytes local = CMR for an AIRS RS Summary file);
   - `umm.ProviderDates`: `Insert` and `Update`; `meta.revision-date`;
   - `umm.CollectionReference`: `ShortName` and `Version` ('2').
-- Collections, concept ids, counts and sizes: the handoff's "What to download" table.
+- Collections, concept ids, counts and sizes: the handoff's "What to download" table,
+  and the dry run table in TASKS.md task 3. CMR lists 16 TROPESS HDO collections at
+  GES DISC (2026-10-22): the 14 configured and the 2 complete on disk.
+  `earthaccess.search_datasets` takes no short-name pattern; query
+  `collections.umm_json` with `options[short_name][pattern]=true` (see the notebook).
+- File names: `TROPESS_<platform>_L2_<type>_HDO_<YYYYMMDD>_MUSES_<R1pNN>_<stream>_<F0pN>[_J<n>].nc`;
+  platforms `AIRS-Aqua`, `CrIS-SNPP`, `CrIS-JPSS1`; stream `RS`, `FS` or `SC_AUS`; the
+  joint flag is absent from early files.
   The v2 collections (FS, from 2026-06-01, R1p25, format F2p10) are live and growing.
 
 ## Local data (checked 2026-10-22)
@@ -116,9 +141,9 @@ Update, plus `meta.revision-date`; download time = the file's mtime).
   `cpython-3.13.12` is installed under `~/.local/share/uv/python/`. Don't use 3.14:
   numpy segfaults on it (see `../access_imerg/CLAUDE.md`). Run everything as
   `uv run python <script> --config config/<file>.yaml`.
-- Likely dependencies: `earthaccess`, `requests`, `pyyaml` (for `utils/path_utils.py`),
-  `h5py` (integrity check), plus `xarray`, `netcdf4`, `h5netcdf` and `jupyter` for the
-  search notebook and spot checks.
+- Dependencies: `earthaccess` (0.19.0), `requests`, `pyyaml` (for
+  `utils/path_utils.py`), `h5py` (integrity check), plus `xarray`, `netcdf4`,
+  `h5netcdf` and `jupyter` for the search notebook and spot checks. The venv is built.
 - earthaccess auth is `earthaccess.login(strategy='netrc')`. earthaccess 0.19 notes are in
   `../access_imerg/CLAUDE.md`.
 - No build, lint or test tooling exists in this repo or its siblings. Verify with

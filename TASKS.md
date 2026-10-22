@@ -7,9 +7,9 @@ Write a CLAUDE.md in the same shape as `../access_tropomi/CLAUDE.md`: purpose, *
 Initialize a git repo here and connect it to the remote (see general notes).
 - `origin` fetches over HTTPS and pushes over SSH (`git@github.com:kheyblom/access_tropess.git`), as the siblings do, because HTTPS has no credential helper on this system.
 - branch `main`. Copy the sibling `.gitignore` (with `logs/*.pid`).
-- local repo initialized (2026-10-22). **The GitHub repo `kheyblom/access_tropess` does not exist yet** (`git ls-remote` over SSH: "Repository not found", 2026-10-22). It needs creating (empty) before the first push.
+- local repo initialized (2026-10-22), `origin` set (fetch HTTPS, push SSH). **The GitHub repo `kheyblom/access_tropess` does not exist yet** (`git ls-remote` over SSH: "Repository not found", 2026-10-22). I asked for it to be created with `gh`, but `gh` is not installed on Derecho and its login is interactive, so I (the user) need to create it, empty, on github.com. Then push `main` and mark this task complete.
 
-# 3. Plan and build the codebase
+# 3. Plan and build the codebase [COMPLETED]
 Build the pipeline to be consistent with the sibling access codebases: one `tropess_download.py` driven by a YAML config, `utils/` copied from a sibling, `config/config_download.yaml` plus a `_tiny` one, `run_download.sh` (detached login-node run with `--status`) and `monitor_download.sh` (from tropomi), `job_download.pbs` (Casper fallback), `README.md`, a `tropess_search.ipynb` scratch notebook, and a uv environment pinned to a uv-managed Python 3.13 (see imerg for why not 3.14).
 
 Plan it with me before building. The proposed design:
@@ -25,6 +25,35 @@ Plan it with me before building. The proposed design:
 - **manifest**: per collection, `<ShortName.version>_manifest.csv` in its folder, rewritten after each run from the listing and what is on disk: file name, bytes, CMR size (MB), CMR updated, CMR revision date, download time (UTC, the file's mtime), URL, and the CMR query time.
 - `--dry-run` reports per collection: CMR granules and date span, the algorithm/format tokens seen, files to fetch and their bytes, files already in the new folder, names left out because the existing folder holds them, existing-folder `TROPESS_*` files with no CMR counterpart (expected: the 5 replaced CrIS-JPSS1 files) and existing-folder files whose size differs from CMR (reported, never touched), and any date with more than one granule.
 - **never touch**: nothing is written outside the new collection folders and `logs/`, except sweeping the run's own `.part` files.
+- **Decided (2026-10-22): design approved as proposed.**
+
+Build (2026-10-22):
+- `tropess_download.py`, `config/config_download.yaml` (the 14 collections, into the raw tree) and `config/config_download_tiny.yaml` (into `data/tropess_tiny/`: AIRS FS Standard v1 2024-09-01..07, CrIS-JPSS1 FS Standard v1 2024-08-20..22, AIRS FS Summary v2 2026-06-01..03; 7 files, 255 MB), `utils/`, `run_download.sh`, `monitor_download.sh` (both from tropomi), `job_download.pbs` (Casper, 2 cores, 4 h), `README.md`, `tropess_search.ipynb`, and a uv venv (Python 3.13.12, earthaccess 0.19.0, h5py 3.16.0).
+- additions to the design: a collection may set its own `date_range` (used by the tiny config); `existing` is an absolute path, so a test into another directory compares against the real old folder; the pid file covers the verification pass too.
+- `earthaccess.search_datasets` takes no short-name pattern; the notebook queries CMR's `collections.umm_json` with `options[short_name][pattern]` directly. It lists 16 TROPESS HDO collections at GES DISC: the 14 configured plus the 2 complete on disk. No new collection (2026-10-22).
+- tiny dry run: 7 files, 255.3 MB; 4 AIRS days and 2 CrIS days left out as held; the old CrIS 2024-08-21 R1p23 file is reported as replaced by R1p24. Access check passed.
+- full dry run (2026-10-22 23:09–23:11, login node derecho3, `nice -n 19`, ~2 min): **12,126 files, 237.00 GB, all missing**, no warnings beyond the 5 replacements. Access check passed. Full output: `logs/dryrun_full.out`.
+
+| collection | CMR granules | dates | to fetch | size |
+|---|---|---|---|---|
+| `TRPSDL2HDOAIRSORS.1` | 6,362 | 2002-08-30..2020-03-30 | 6,362 | 36.13 GB |
+| `TRPSYL2HDOAIRSFS.1` | 1,814 | 2021-02-01..2026-05-31 | 1,814 | 4.25 GB |
+| `TRPSYL2HDOAIRSFS.2` | 30 | 2026-06-01..06-30 | 30 | 0.12 GB |
+| `TRPSDL2HDOAIRSFS.1` | 1,815 (1,251 held) | 2021-02-01..2026-05-31 | 564 | 30.84 GB |
+| `TRPSDL2HDOAIRSFS.2` | 30 | 2026-06-01..06-30 | 30 | 1.48 GB |
+| `TRPSFL2HDOAIRSFS.2` | 30 | 2026-06-01..06-30 | 30 | 18.80 GB |
+| `TRPSYL2HDOCRSFS.1` | 110 | 2021-02-01..05-21 | 110 | 0.27 GB |
+| `TRPSDL2HDOCRSFS.1` | 110 | 2021-02-01..05-21 | 110 | 5.64 GB |
+| `TRPSDL2HDOCRSAUS.1` | 91 | 2019-11-01..2020-01-31 | 91 | 0.84 GB |
+| `TRPSYL2HDOCRS1FS.1` | 1,887 | 2021-04-01..2026-05-31 | 1,887 | 5.83 GB |
+| `TRPSYL2HDOCRS1FS.2` | 138 | 2026-06-01..10-16 | 138 | 0.80 GB |
+| `TRPSDL2HDOCRS1FS.1` | 1,887 (1,203 held) | 2021-04-01..2026-05-31 | 684 | 36.49 GB |
+| `TRPSDL2HDOCRS1FS.2` | **139** (handoff 138) | 2026-06-01..10-17 | 139 | 9.72 GB |
+| `TRPSFL2HDOCRS1FS.2` | 137 | 2026-06-01..10-15 | 137 | 85.83 GB |
+
+- every count matches the handoff; CrIS-JPSS1 FS Standard v2 grew by one day (live). One granule per date everywhere.
+- AIRS FS Standard v1 to fetch: 2023-07-21, 2023-10-19, then 2024-09-05..2026-05-31 minus upstream gaps (CMR lists no file for, e.g., 2024-09-17..19). The old folder's 1,251 granules all match CMR by name and size.
+- CrIS-JPSS1 FS Standard v1 to fetch: the 5 replacements (2021-05-21, 2022-03-08, 2022-08-13, 2023-12-27, 2024-08-21, all R1p24, updated 2025-09-04..09-11), dates inside the old window, and the days after 2024-09-05. The old folder's other 1,203 granules match CMR by name and size; its 5 replaced files are kept.
 
 # 4. Test the pipeline
 Run the tiny config end-to-end before any real download, into a separate scratch directory, on a login node (no core-hours). The tiny config covers a few days of one full collection and of one "missing only" collection (to prove names in the existing folder are left out).
