@@ -15,7 +15,7 @@
 # goes away, i.e. when the run ends.
 #
 # Usage (run_download.sh starts it; by hand it is):
-#   setsid nohup ./monitor_download.sh [config] > /dev/null 2>&1 < /dev/null &
+#   setsid nohup ./monitor_download.sh [config [launched pid]] > /dev/null 2>&1 < /dev/null &
 # Limits can be overridden from the environment: INTERVAL (seconds, default
 # 300), MAX_CORES (default 2), MAX_RSS_MB (default 2048), BREACHES (default 2),
 # WAIT_START (seconds to wait for the pid file to appear, default 7200).
@@ -25,6 +25,8 @@ set -uo pipefail
 cd "$(dirname "$0")"
 
 CONFIG="${1:-config/config_download.yaml}"
+# pid of the process run_download.sh launched, if it passed one
+LAUNCHED_PID="${2:-}"
 INTERVAL="${INTERVAL:-300}"
 MAX_CORES="${MAX_CORES:-2}"
 MAX_RSS_MB="${MAX_RSS_MB:-2048}"
@@ -43,10 +45,18 @@ log() {
 }
 
 # the enumeration takes a while before the run writes its pid file; a pid file
-# older than this monitor is a stale one from a run that died
+# older than this monitor is a stale one from a run that died. A run that has
+# little to do can write its pid file and remove it again between two polls,
+# so when run_download.sh passes the launched process's pid, the wait also ends
+# once that process is gone.
 MONITOR_START=$(date +%s)
 waited=0
 while [[ ! -f "${PID_FILE}" ]] || (( $(stat -c %Y "${PID_FILE}") < MONITOR_START - 5 )); do
+    if [[ -n "${LAUNCHED_PID}" ]] && ! kill -0 "${LAUNCHED_PID}" 2>/dev/null; then
+        log "run ${LAUNCHED_PID} ended before there was anything to monitor;" \
+            "last main log line: $(tail -n 1 "${LOG_DIR}/${LOG_FILE}")"
+        exit 0
+    fi
     if (( waited >= WAIT_START )); then
         log "no ${PID_FILE} after ${WAIT_START} s, giving up"
         exit 1
@@ -55,7 +65,11 @@ while [[ ! -f "${PID_FILE}" ]] || (( $(stat -c %Y "${PID_FILE}") < MONITOR_START
     waited=$(( waited + ${POLL_START:-60} ))
 done
 
-read -r RUN_HOST RUN_PID < "${PID_FILE}"
+# the run may have ended between the check above and this read
+if ! read -r RUN_HOST RUN_PID < "${PID_FILE}" 2>/dev/null; then
+    log "run ended before there was anything to monitor"
+    exit 0
+fi
 if [[ "${RUN_HOST}" != "$(hostname)" ]]; then
     log "run is on ${RUN_HOST}, not $(hostname); a monitor has to run on the same node"
     exit 1

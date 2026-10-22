@@ -22,20 +22,22 @@ working step, so that a new session can resume without re-deriving anything.
 ## Current working state
 
 - Task 1 (this CLAUDE.md, and TASKS.md filled out) is done (2026-10-22).
-- Task 2 is in progress: the local repo is on `main`, `origin` set (fetch HTTPS, push
-  SSH). **The GitHub repo `kheyblom/access_tropess` does not exist yet** (2026-10-22).
-  `gh` is not installed here and its login is interactive, so the user has to create it
-  (empty) on github.com; then `git push -u origin main` and mark task 2 complete.
+- Task 2 is complete (2026-10-22): the user created `kheyblom/access_tropess`; `main` is
+  pushed and tracks `origin/main`.
 - Task 3 is complete (2026-10-22): the user approved the design, and everything is built
   and committed (see TASKS.md task 3 for the build notes and the dry run table).
 - Full dry run (2026-10-22 23:09): **12,126 files, 237.00 GB to fetch**, matching the
   handoff except CrIS-JPSS1 FS Standard v2 at 139 (live, was 138). The 5 CrIS-JPSS1
   replacements are confirmed; one granule per date everywhere; the old folders match
   CMR by name and size. Output: `logs/dryrun_full.out`.
-- **Next: task 4** (tiny end-to-end test, 7 files, 255 MB, login node). Ask the user
-  before starting it. Not yet proven: that CMR's MiB size rounds to the exact byte
-  count for every collection (it did for one RS Summary file), and that the v2 (F2p10)
-  files carry `VersionID` 2 at the root.
+- Task 4 is complete (2026-10-22; details in TASKS.md). Run, rerun, interrupt, resume,
+  wrong-size and bad-content paths all behave as designed. CMR sizes are exact for v1
+  and v2; v2 files carry `VersionID` 2. Fixed: the monitor now gets the launched pid
+  from `run_download.sh` and stops waiting when a short run ends between its polls.
+- The tiny data is at `/glade/derecho/scratch/kheyblom/data/tropess_tiny/` (7 files,
+  255 MB). Delete it only with the user's okay.
+- **Next: task 5** (rerun the full dry run as the audit and report), then task 6, which
+  needs the user's approval and their choice of route (monitored login node or Casper).
 - Facts checked (2026-10-22): `time`, `ShortName` (bytes) and `VersionID` (int32 array)
   are at the file root (v1 RS Summary); scratch is 70.3 of 150 TiB used.
 

@@ -98,10 +98,13 @@ mkdir -p "${LOG_DIR}"
 # nice 19 so the download yields to anything interactive on the shared node
 setsid nohup nice -n 19 uv run python tropess_download.py --config "${CONFIG}" \
     > nohup.out 2>&1 < /dev/null &
+LAUNCHED_PID=$!
 
 # watch the run's footprint on the node, and stop it if it grows past what a
-# download should need; it waits for the pid file, then follows the run
-setsid nohup ./monitor_download.sh "${CONFIG}" > /dev/null 2>&1 < /dev/null &
+# download should need; it waits for the pid file, then follows the run. It is
+# given the launched pid so it stops waiting if the run ends first, as a run
+# with little to do can come and go between two of its polls.
+setsid nohup ./monitor_download.sh "${CONFIG}" "${LAUNCHED_PID}" > /dev/null 2>&1 < /dev/null &
 
 echo "started on $(hostname) with ${CONFIG}"
 echo "  the run writes ${PID_FILE} with its host and pid once enumeration finishes"

@@ -3,11 +3,12 @@ We need to build a pipeline that downloads every NASA TROPESS (MUSES) AIRS and C
 # 1. init CLAUDE.md for the codebase [COMPLETED]
 Write a CLAUDE.md in the same shape as `../access_tropomi/CLAUDE.md`: purpose, *Current working state*, settled design choices, a remote section (GES DISC and CMR facts), local data, environment and commands, sibling conventions, compute and allocation, and git. Pull in the conventions and lessons from the siblings, especially imerg (the other GES DISC/earthaccess downloader) and tropomi (the most recent).
 
-# 2. init a git repo [IN PROGRESS]
+# 2. init a git repo [COMPLETED]
 Initialize a git repo here and connect it to the remote (see general notes).
 - `origin` fetches over HTTPS and pushes over SSH (`git@github.com:kheyblom/access_tropess.git`), as the siblings do, because HTTPS has no credential helper on this system.
 - branch `main`. Copy the sibling `.gitignore` (with `logs/*.pid`).
 - local repo initialized (2026-10-22), `origin` set (fetch HTTPS, push SSH). **The GitHub repo `kheyblom/access_tropess` does not exist yet** (`git ls-remote` over SSH: "Repository not found", 2026-10-22). I asked for it to be created with `gh`, but `gh` is not installed on Derecho and its login is interactive, so I (the user) need to create it, empty, on github.com. Then push `main` and mark this task complete.
+- 2026-10-22: I created the repo; `main` is pushed and tracks `origin/main`.
 
 # 3. Plan and build the codebase [COMPLETED]
 Build the pipeline to be consistent with the sibling access codebases: one `tropess_download.py` driven by a YAML config, `utils/` copied from a sibling, `config/config_download.yaml` plus a `_tiny` one, `run_download.sh` (detached login-node run with `--status`) and `monitor_download.sh` (from tropomi), `job_download.pbs` (Casper fallback), `README.md`, a `tropess_search.ipynb` scratch notebook, and a uv environment pinned to a uv-managed Python 3.13 (see imerg for why not 3.14).
@@ -55,13 +56,24 @@ Build (2026-10-22):
 - AIRS FS Standard v1 to fetch: 2023-07-21, 2023-10-19, then 2024-09-05..2026-05-31 minus upstream gaps (CMR lists no file for, e.g., 2024-09-17..19). The old folder's 1,251 granules all match CMR by name and size.
 - CrIS-JPSS1 FS Standard v1 to fetch: the 5 replacements (2021-05-21, 2022-03-08, 2022-08-13, 2023-12-27, 2024-08-21, all R1p24, updated 2025-09-04..09-11), dates inside the old window, and the days after 2024-09-05. The old folder's other 1,203 granules match CMR by name and size; its 5 replaced files are kept.
 
-# 4. Test the pipeline
+# 4. Test the pipeline [COMPLETED]
 Run the tiny config end-to-end before any real download, into a separate scratch directory, on a login node (no core-hours). The tiny config covers a few days of one full collection and of one "missing only" collection (to prove names in the existing folder are left out).
 - `./run_download.sh config/config_download_tiny.yaml`. Check `--status`, the per-worker logs, a clean verification pass, the manifest and `done :-)`.
 - rerun it and confirm every file is skipped.
 - interrupt a run with `kill -INT`. Confirm the `.part` files are swept, and that a rerun resumes and verifies.
 - spot-check a v1 and a v2 (F2p10) file with xarray/h5py.
 - fix anything found, commit, and delete the test data (with my okay).
+
+Results (2026-10-22, login node derecho3, 2 workers):
+- run: 7 files (255.3 MB) in 10 s, 0 errors. 3 AIRS FS Standard v1 days (09-05..07) fetched and the 4 held ones left out; the CrIS-JPSS1 2024-08-21 R1p24 replacement fetched; 3 AIRS FS Summary v2 days. Verified 7/7, three manifests written, `done :-)`.
+- CMR's MiB sizes rounded to the exact byte count for every file, including v2 and a CrIS size given to 15 digits. The v2 (F2p10) files carry `VersionID` 2 and still have `time` at the root.
+- rerun: all 7 present, nothing downloaded, verified 7/7, manifests rewritten with the new query time.
+- found and fixed: the monitor waited up to 2 h for a pid file that a 10 s run had written and removed between two of its 60 s polls. `run_download.sh` now passes the launched pid, and the monitor stops waiting once that process is gone (retested: it exited 45 s after an all-skip run).
+- `kill -INT` mid-transfer (a copy of the tiny config into my scratchpad, 1 worker): the in-flight `.part` was swept, the pid file removed, no processes left. Resume: 7 downloaded, verified 7/7.
+- wrong size: one file trimmed by 500 bytes; the rerun fetched only that file and verified.
+- bad content: one v2 file overwritten with zeros at the same size; the rerun skipped it on size, verification reported `bad content` and exited 1, and the manifest left it out. Deleting it and rerunning fetched it again. So a right-size corrupt file needs deleting by hand, as designed.
+- spot checks: a v1 (R1p23 F0p9) and a v2 (R1p25 F2p10) file open with h5py and xarray (`target` 29,142 and 15,679 rows; `level` 17).
+- the scratchpad copy is deleted. The tiny data is still at `/glade/derecho/scratch/kheyblom/data/tropess_tiny/` (7 files, 255 MB, plus 3 manifests) until I okay deleting it.
 
 # 5. Audit before downloading
 Dry-run the real config and report back before anything downloads:
