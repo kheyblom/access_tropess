@@ -17,6 +17,7 @@ utils/                            config loading, logging
 run_download.sh                   start the download on a login node
 monitor_download.sh               watch the run's footprint on the node, stop it if it grows
 job_download.pbs                  fallback batch job (Casper)
+HANDBACK.md                       the report of the 2026-10-22 download for data_engineering_wiso-sat
 ```
 
 ## One time setup

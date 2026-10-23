@@ -84,7 +84,7 @@ Dry-run the real config and report back before anything downloads:
 
 Results (2026-10-22 23:30 UTC, `logs/dryrun_full.out`): the same as the task 3 dry run. 12,126 files, 237.00 GB, all missing; the counts match the handoff except CrIS-JPSS1 FS Standard v2 (139, live); one granule per date everywhere; the 5 CrIS-JPSS1 replacements and nothing else in the old folders differs from CMR. No new collection (16 at GES DISC: the 14 configured and the 2 complete). Quota is ample. The tiny test data is deleted (my okay, 2026-10-22).
 
-# 6. Download the missing files [IN PROGRESS]
+# 6. Download the missing files [COMPLETED]
 Fetch everything the audit lists into the new collection folders.
 - needs my approval before starting, including the route: a monitored login-node run (`./run_download.sh`, as tropomi) or the Casper batch job (`qsub -A "$PBS_ACCOUNT" job_download.pbs`). Show me any job script and its cost first.
 - monitor with `./run_download.sh --status`, and rerun if verification reports missing files.
@@ -93,13 +93,18 @@ Fetch everything the audit lists into the new collection folders.
 Run (approved 2026-10-22: login node, detached, so it survives my disconnecting; I first asked for Casper, then a Derecho shared node, then settled on the login node):
 - started 2026-10-22 17:32 (MT) on derecho3 with `./run_download.sh` (4 workers, `nice -n 19`, `setsid nohup`, own session 321132, main pid 321148), with `monitor_download.sh` logging to `logs/tropess_download_monitor.log`.
 - listing done 17:33: **12,127 files** (one more than the audit: a live v2 collection grew). First minute: ~350 files, no errors.
+- **finished 2026-10-22 18:49 (MT)**: transfers 17:33–18:35 (~62 min, ~65 MB/s average, up to ~270 MB/s on the Full files), verification 18:35–18:49 (~14 min for 12,127 h5py opens). **Downloaded 12,127, 0 failed** (one 502 on AIRS RS Standard 2019-02-26, recovered on retry). **Verified 12,127/12,127 (237.01 GB), 0 missing, 0 incomplete, 0 bad content, `done :-)`.** 14 manifests written; no `.part` files left.
+- the four old folders are untouched: the same entry counts, nothing newer than 2026-09-16.
+- monitor: 0.5–1 core, < 1 GB RSS, never over its limits. The user cgroup sat at its 10 GiB cap, mostly page cache (as with tropomi). Cosmetic: the sample after the workers exit shows a negative CPU (`-2.85 cores`), because the exited processes' CPU time drops out of the session total.
 - `job_download.pbs` is back on Casper (with the venv python called directly). The develop queue was not used: the sibling notes say Derecho compute nodes have no outbound internet, which is unverified for shared nodes.
 
-# 7. Hand back to data_engineering_wiso-sat
+# 7. Hand back to data_engineering_wiso-sat [COMPLETED]
 Report, as the handoff's "What to hand back" asks:
 - each new folder's path, files downloaded vs CMR count, and the cutoff (CMR query time) for the v2 collections;
 - the manifest paths;
 - failures, gaps, and anything that differs from the handoff table: counts, new collections, dates with two files, replaced granules.
+
+Written 2026-10-22: [HANDBACK.md](HANDBACK.md). It has each folder with its counts and CMR cutoff, the manifest layout and columns, the 5 replacements, and the breakdown of the two "missing only" collections. Of note: the v2 counts grew (CrIS-JPSS1 FS Summary and Standard v2 at 139); AIRS v2 ends at 2026-06-30 while CrIS-JPSS1 v2 runs into October; the 72 AIRS FS Standard v1 days missing in 2024-09..2026-05 are upstream gaps (FS Summary v1 lacks nearly the same days); no new collections; no dates with two files; no failures.
 
 # Later (not scheduled)
 - top-up reruns of the live v2 collections (FS v2 keeps growing).

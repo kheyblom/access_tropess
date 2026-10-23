@@ -36,14 +36,16 @@ working step, so that a new session can resume without re-deriving anything.
   from `run_download.sh` and stops waiting when a short run ends between its polls.
 - Task 5 is complete (2026-10-22 23:30 UTC): the audit dry run matches the task 3 one.
   The tiny test data is deleted (the user's okay).
-- **Task 6 is in progress.** The full download started 2026-10-22 17:32 (MT) on
-  **derecho3**, detached (`setsid nohup nice -n 19`, own session 321132, main pid
-  321148), 4 workers, with the monitor. 12,127 files listed (one more than the audit).
-  The user disconnected and left it running. Check it with `./run_download.sh --status`
-  (from another node: `ssh derecho3 'kill -0 321148 && echo alive'`) and
-  `tail -n 40 logs/tropess_download.log`. A run that died leaves a stale pid file;
-  rerun `./run_download.sh` to resume. When it ends with `done :-)`, record the
-  verification and the manifests in TASKS.md and go to task 7 (hand back).
+- **Tasks 6 and 7 are complete (2026-10-22).** The full download ran 17:32–18:49 MT on
+  derecho3: 12,127 files, 0 failed, verified 12,127/12,127 (237.01 GB), `done :-)`.
+  There are 14 new folders, each with a `<ShortName.version>_manifest.csv`, and the old
+  folders are untouched. The hand-back for the wiso-sat session is
+  [HANDBACK.md](HANDBACK.md); the user relays it (this repo does not edit
+  `data_engineering_wiso-sat`).
+- **All scheduled tasks are complete.** TASKS.md *Later* has the candidates: top-up
+  reruns of the live v2 collections (a plain `./run_download.sh` fetches only new
+  granules and rewrites the manifests), and a campaign copy because of the scratch
+  purge. Ask the user before starting either.
 - Route preference (user, 2026-10-22): small downloads like this go on a login node,
   detached with `run_download.sh`, not a batch job. `job_download.pbs` is back on Casper;
   the develop queue's internet access was never checked.
